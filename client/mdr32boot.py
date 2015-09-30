@@ -34,6 +34,7 @@ class CMD:
     RUN  = b'\x52'
 
 class ERR:
+    R_OK = b'\x4B'
     ERR  = b'\x45'
     CHN  = b'\x69'
     CMD  = b'\x63'
@@ -55,7 +56,7 @@ class MDR32BootClient:
         if VERBOSE:
             info_msg('Serial port is closed')
 
-    def connect(self):  #FIXME
+    def connect(self):
         while True:
             self._send_bytes(CMD.SYNC)
             time.sleep(RCV_TIMEOUT)
@@ -91,14 +92,19 @@ class MDR32BootClient:
         self.cmd_cr()
 
     def cmd_load(self, addr, array):
-        ...
+        self._send_cmd(CMD.LOAD, addr, len(array), array)
+        self.cmd_cr()
 
-    def cmd_vfy(self, addr, array):
-        ...
+    def cmd_vfy(self, addr, size):
+        self._send_cmd(CMD.VFY, addr, size)
+        array = self._rcv_bytes(size)
+        self._rcv_reply_test()
+        self.cmd_cr()
+        return array
 
     def cmd_run(self, vtbl):
         self._send_cmd(CMD.RUN, vtbl)
-        info_msg('Board is running...')
+        info_msg('Board is running. Start addr is ' + '0x' + '{0:X}'.format(vtbl))
 
     def _send_cmd(self, cmd, *params):
         self._send_bytes(cmd)
@@ -106,9 +112,16 @@ class MDR32BootClient:
         if params:
             rcv = None
             for param in params:
-                self._send_bytes(param.to_bytes(4, 'little'))
+                if type(param) is bytes:
+                    bs = param
+                else:
+                    bs = param.to_bytes(4, 'little')
+                self._send_bytes(bs)
                 rcv = self._rcv_test()
-            if rcv != cmd:
+            if cmd == CMD.LOAD:
+                if rcv != ERR.R_OK:
+                    raise MDR32BootClientException('received incorrect response')
+            elif rcv != cmd:
                 raise MDR32BootClientException('received incorrect response')
 
     def _send_baud_cmd(self, baud):
@@ -147,6 +160,15 @@ class MDR32BootClient:
             else:
                 return rcv
 
+    def _rcv_reply_test(self):
+        time.sleep(RCV_TIMEOUT)
+        if self._port.inWaiting():
+            rcv = self._rcv_bytes()
+            if rcv != ERR.R_OK:
+                raise MDR32BootClientException('received incorrect response')
+        else:
+                raise MDR32BootClientException('rcv timeout')
+
     def _clean_rcv(self):
         n = self._port.inWaiting()
         self._port.read(n)
@@ -161,10 +183,19 @@ if __name__ == '__main__':
     client = MDR32BootClient()
     client.open(sys.argv[1])
     client.connect()
-    # send commands
-    client.cmd_sync()
-    client.cmd_cr()
-    #client.cmd_baud(115200)
-    client.cmd_run(0x20000000)
+    while True:
+        print('> ', end='')
+        cmd = input()
+        if cmd == 'sync': client.cmd_sync()
+        elif cmd == 'cr': client.cmd_cr()
+        elif cmd == 'baud': client.cmd_baud(int(input('baud> ')))
+        elif cmd == 'load':
+            client.cmd_load(int(input('addr> '), base=16),
+                            bytes.fromhex(input('array> ')))
+        elif cmd == 'vfy':
+            client.cmd_vfy(int(input('addr> '), base=16),
+                           int(input('size> ')))
+        elif cmd == 'run': client.cmd_run(int(input('addr> '), base=16))
+        elif cmd == 'q': break
 
     client.close()
