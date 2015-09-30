@@ -24,10 +24,10 @@ class FontStyle:
     BOLD = '\033[1m'
 
 def info_msg(msg):
-    print(FontStyle.BOLD + FontStyle.GREEN + '[INFO] ' + FontStyle.ENDC + msg)
+    print(FontStyle.BOLD + FontStyle.GREEN + '[INFO]  ' + FontStyle.ENDC + msg)
 
 def send_msg(msg):
-    print(FontStyle.BOLD + FontStyle.YELLOW + '[SEND] ' + FontStyle.ENDC + msg)
+    print(FontStyle.BOLD + FontStyle.YELLOW + '[SEND]  ' + FontStyle.ENDC + msg)
 
 def rcv_msg(msg):
-    print(FontStyle.BOLD + FontStyle.BLUE + '[RCV] ' + FontStyle.ENDC + msg)
+    print(FontStyle.BOLD + FontStyle.BLUE + '[RCV]   ' + FontStyle.ENDC + msg)
