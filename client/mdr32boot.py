@@ -75,8 +75,8 @@ class MDR32BootClient:
         self._send_cmd(CMD.SYNC)
         self.cmd_cr()
 
-    def cmd_cr(self):   #FIXME
-        #self._clean_rcv()
+    def cmd_cr(self):
+        self._clean_rcv()
         self._send_bytes(CMD.CR)
         rcv = self._rcv_test()
         if rcv == CMD.CR:
@@ -115,11 +115,17 @@ class MDR32BootClient:
         self._send_bytes(CMD.BAUD)
         self._rcv_test()
         self._send_bytes(baud.to_bytes(4, 'little'))
+        self._port.close()
         self._port.setBaudrate(baud)
+        self._port.open()
+        # Fix issue: set baud rate before send data
+        self._send_bytes(CMD.BAUD)
+        self._rcv_test()
+        self._send_bytes(baud.to_bytes(4, 'little'))
         rcv = self._rcv_test()
         if rcv != CMD.BAUD:
             raise MDR32BootClientException('received incorrect response')
-        info_msg('Set baudrate to ' + str(baud))
+        info_msg('Baudrate is ' + str(baud))
 
     def _rcv_bytes(self, bnum=1):
         rcv = self._port.read(bnum)
@@ -141,9 +147,9 @@ class MDR32BootClient:
             else:
                 return rcv
 
-    # FIXME useless
-    #def _clean_rcv(self):
-        #self._port.readall()
+    def _clean_rcv(self):
+        n = self._port.inWaiting()
+        self._port.read(n)
 
     def _err_rcv(self):
         rcv = self._rcv_bytes()
