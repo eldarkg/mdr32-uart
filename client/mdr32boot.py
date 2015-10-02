@@ -19,7 +19,7 @@ import binascii
 import serial
 import time
 
-from msg import *
+from .msg import *
 
 VERBOSE     = True
 RCV_TIMEOUT = 0.010     # sec

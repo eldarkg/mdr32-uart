@@ -17,8 +17,8 @@
 
 import struct
 
-from hex import *
-import tools
+from .hex import *
+from . import tools
 
 class IHexReaderException(HexReaderException): ...
 
