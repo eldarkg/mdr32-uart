@@ -36,7 +36,8 @@ class HexReader:
 
     # Callback functions (events)
     def event_write_data(self, addr, data):
-        self._not_implement()
+        ...
 
-    def _not_implement(self):
-        raise HexReaderException("didn't implement")
+    def event_execute(self, addr):
+        ...
+

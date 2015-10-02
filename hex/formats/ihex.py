@@ -15,6 +15,8 @@
 
 '''ihex 32-bit format file processing'''
 
+import struct
+
 from hex import *
 import tools
 
@@ -40,7 +42,9 @@ class IHexReader(HexReader):
             result = IHexReader.decode(entry.rstrip())
             if result['rectype'] == IHexRecType.EOF:
                 raise StopIteration
-            #TODO check record type and call events
+            else:
+                self._rec_handle(result)
+
             return result
         else:
             raise IHexReaderException("didn't find end of file")
@@ -69,6 +73,18 @@ class IHexReader(HexReader):
             raise IHexReaderException('incorrect checksum')
 
         return out
+
+    def _rec_handle(self, rec):
+        '''Check record type and call events'''
+        if rec['rectype'] == IHexRecType.ELINADDR:
+            self._base = struct.unpack('>H', rec['data'])[0] << 16
+        elif rec['rectype'] == IHexRecType.DATA:
+            offs = rec['offset']
+            addr = self._base + offs
+            self.event_write_data(addr, rec['data'])
+        elif rec['rectype'] == IHexRecType.SLINADDR:
+            addr = struct.unpack('>I', rec['data'])[0]
+            self.event_execute(addr)
 
 
 if __name__ == '__main__':
